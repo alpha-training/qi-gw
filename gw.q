@@ -7,7 +7,7 @@
 \d .gw
 
 if[not .qi.isproc;'"A gateway must be started as a process e.g. gw1"];
-if[not(MODE:.qi.tosym .conf.GW_MODE)in`seamless`sync`asyc;'"Unrecognized .conf.GW_MODE"];
+if[not(MODE:.qi.tosym .conf.GW_MODE)in`sync`asyc`seamless;'"Unrecognized .conf.GW_MODE"];
 
 .qi.frompkg[`gw;MODE]
 
