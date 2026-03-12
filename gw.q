@@ -7,22 +7,28 @@
 \d .gw
 
 if[not .qi.isproc;'"A gateway must be started as a process e.g. gw1"];
-if[not(MODE:.qi.tosym .conf.GW_MODE)in`sync`asyc`seamless;'"Unrecognized .conf.GW_MODE"];
+if[not(MODE:.qi.tosym .conf.GW_MODE)in`seamless`sync`asyc;'"Unrecognized .conf.GW_MODE"];
 
 .qi.frompkg[`gw;MODE]
 
 init:{
-  if[not count DB::$[count db:.proc.self.options`point_to;(),`$db;1!select name,pkg from .proc.self.mystack where pkg in`hdb`rdb];
+  if[not count DB::$[count db:.proc.self.options`point_to;(),`$db;exec name from .proc.self.mystack where pkg in`hdb`rdb];
     '"A gateway must be part of a stack with at least one rdb/hdb"];
-  refreshdates[];
+  refreshmap[];
+  /.gw.query "select avg open by sym from BinanceKline2s";
   }
 
-/ database connections
-getdbs:{$[count w:where null d:n!.ipc.conn each n:exec name from .gw.DB;'"Could not connect to ",","sv string w;update h:get d from .gw.DB]}
+dconns:{$[count n:where null c:DB!.ipc.conn each DB;'"Could not connect to ",","sv string n;c]}
 
-refreshdates:{DB::update dates:{`s#$[x=`rdb;1#.z.d;y"date"]}'[pkg;h]from getdbs[];}
+refreshmap:{
+  if[not count d:dconns`;()];
+  tmap::`name xkey{[d;k] h:d k;update name:k from`d`t!$[k like"hdb*";h"(date;tables`)";((),.z.d;h"tables`")]}[d]each key d;
+  pdates::ungroup select date:d,name from tmap;
+  }
 
 \d .
 
-dateadd:{[pkg;x] $[pkg=`rdb;`date xcols update date:.z.d from x;x]}
-tcounts:{`name xcols raze{dateadd[x`pkg]update name:x[`name] from x[`h]"tcounts`"}each 0!.gw.getdbs[]}
+tcounts:{
+  if[not count d:.gw.dconns`;:()];
+  $[98=type r:raze{[d;k] `name`date xcols $[98<>type r:update name:k from d[k]"tcounts`";r;k like"hdb*";r;update date:.z.d from r]}[d]each key d;`date xasc r;r]
+  }
